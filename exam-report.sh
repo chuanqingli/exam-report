@@ -15,12 +15,15 @@ init-data(){
     fi
 
     echo "wid==>$WID"
-    #指定年级和班级，目前年级为5位数字，班级为2位数字
+
     #一次循环只处理一个班级好了
-    #科目数量
-    GRADECODE=99999
-    CLASSCODE=09
-    SUBJECTCOUNT=10
+    GRADECODE=00000 #年级编号，前3位为学校编号，后两位为入学年份
+    CLASSCODE=00 #班级在年级的编号，不足两位前面补0
+    SUBJECTCOUNT=8 #年级最大科目数量
+    STUDENTCOUNT=55 #班级最大学生人数
+    #分辨率在1600x900时，浏览器刷新键的位置
+    REFRESH_X=76
+    REFRESH_Y=92
 }
 
 
@@ -34,8 +37,8 @@ get-jpg-data(){
     fi
     
     #刷新键的位置
-    xx0=78
-    yy0=126
+    xx0=$((REFRESH_X))
+    yy0=$((REFRESH_Y))
 
     #用户名及密码输入位置
     xx1=$((702+xx0))
@@ -107,14 +110,14 @@ $2
 convert-pics-txt(){
 
     if [[ ! -f jtmp_${STUDENTNO}.jpg ]];then
-       echo "$1 不存在000!"
+       echo "$STUDENTNO 不存在000!"
         return
     fi
 
     #文件小于指定长度
     flength=`du -b jtmp_${STUDENTNO}.jpg | awk '{print $1}'`
     if [[ $flength -lt 91873 ]];then
-        echo "$1 不存在111!"
+        echo "$STUDENTNO 不存在111!"
         return
     fi
     
@@ -128,7 +131,7 @@ convert-pics-txt(){
     
     tesseract -l chi_sim tmp_name.jpg gtmp -psm 7
     
-    echo "$1">$STUDENTNO.txt
+    echo "$STUDENTNO">$STUDENTNO.txt
         cat gtmp.txt>>$STUDENTNO.txt
     
     for index in `seq $SUBJECTCOUNT`;do
@@ -140,6 +143,42 @@ convert-pics-txt(){
     sed -i 's/[\t\s ]\+/\t/g' $STUDENTNO.txt
     sed -i 's/^[\t\s ]\+//g' $STUDENTNO.txt
 }
+
+
+#第一步，先下载图片
+download-pics(){
+    init-data
+    for index in `seq -f '%02g' 1 ${STUDENTCOUNT}`;do #seq -f '%02g' 1 52
+        STUDENTNO="$GRADECODE$CLASSCODE$index"
+        echo $STUDENTNO
+        get-jpg-data
+    done
+}
+
+#第二步，图片传文字，依赖参数 SUBJECTCOUNT STUDENTNO
+convert-pics-txt-all(){
+    init-data
+    #从第6位开始取9位
+    for index in `ls jtmp_?????????.jpg|awk '{print substr($1,6,9)}'`;do
+        STUDENTNO="$index"
+        convert-pics-txt
+    done
+}
+
+#第三步，汇总成绩
+create-report(){
+    init-data
+    echo>report.txt
+    #从第1位开始取9位
+    for index in `ls ?????????.txt|awk '{print substr($1,1,9)}'`;do
+        STUDENTNO="$index"
+        if [[ ! -f jtmp_$STUDENTNO.jpg ]];then
+            continue
+        fi
+        cat $STUDENTNO.txt>>report.txt
+    done
+}
+
 
 test01(){
     echo>total.txt
