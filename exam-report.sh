@@ -20,10 +20,11 @@ init-data(){
     GRADECODE=00000 #年级编号，前3位为学校编号，后两位为入学年份
     CLASSCODE=00 #班级在年级的编号，不足两位前面补0
     SUBJECTCOUNT=8 #年级最大科目数量
-    STUDENTCOUNT=55 #班级最大学生人数
+    STUDENTMINNO=1 #班级最大学生人数
+    STUDENTMAXNO=54 #班级最大学生人数
     #分辨率在1600x900时，浏览器刷新键的位置
     REFRESH_X=76
-    REFRESH_Y=92
+    REFRESH_Y=123 #92
 }
 
 
@@ -148,7 +149,7 @@ convert-pics-txt(){
 #第一步，先下载图片
 download-pics(){
     init-data
-    for index in `seq -f '%02g' 1 ${STUDENTCOUNT}`;do #seq -f '%02g' 1 52
+    for index in `seq -f '%02g' ${STUDENTMINNO} ${STUDENTMAXNO}`;do #seq -f '%02g' 1 52
         STUDENTNO="$GRADECODE$CLASSCODE$index"
         echo $STUDENTNO
         get-jpg-data
